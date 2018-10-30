@@ -1,6 +1,6 @@
 {
   "name": "laravel-mix-modular",
-  "version": "1.0.1",
+  "version": "1.0.2",
   "description": "Modular asset building for Laravel Mix",
   "main": "index.js",
   "scripts": {
