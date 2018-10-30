@@ -1,6 +1,6 @@
 {
   "name": "laravel-mix-modular",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "Modular asset building for Laravel Mix",
   "main": "index.js",
   "scripts": {
@@ -8,6 +8,11 @@
   },
   "author": "Tor Morten Jensen <tormorten.jensen@osmaviation.com>",
   "license": "MIT",
+  "homepage": "https://github.com/osmaviation/laravel-mix-modular",
+  "repository": {
+    "type": "git",
+    "url": "git+ssh://git@github.com/osmaviation/laravel-mix-modular.git"
+  },
   "dependencies": {
     "file-set": "^2.0.1",
     "laravel-mix": "^2.0"
