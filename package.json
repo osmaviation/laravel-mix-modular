@@ -1,0 +1,15 @@
+{
+  "name": "laravel-mix-modular",
+  "version": "1.0.0",
+  "description": "Modular asset building for Laravel Mix",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "author": "Tor Morten Jensen <tormorten.jensen@osmaviation.com>",
+  "license": "MIT",
+  "dependencies": {
+    "file-set": "^2.0.1",
+    "laravel-mix": "^2.0"
+  }
+}
