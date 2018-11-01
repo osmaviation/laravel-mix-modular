@@ -56,7 +56,7 @@ class ModularMix {
             })
         });
 
-        if (this.options.extract) {
+        if (this.options.extract && vendors.length > 0) {
             mix.extract(vendors);
         }
     }
