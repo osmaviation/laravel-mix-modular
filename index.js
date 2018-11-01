@@ -1,5 +1,6 @@
 const mix = require('laravel-mix');
 const path = require('path');
+const FileSet = require('file-set')
 
 // This is kind of an undocumented Mix function, hope it stays around! Easy to
 // refactor if it'd ever cause an issue.
@@ -17,7 +18,8 @@ class ModularMix {
     }
 
     register(vendor, options = {}) {
-        const FileSet = require('file-set')
+
+        this.vendor = vendor;
         this.options = Object.assign(
             {
                 extract: true,
@@ -30,24 +32,15 @@ class ModularMix {
         );
 
         let vendors = [];
-
-        function getExtension(filename) {
-            var i = filename.lastIndexOf('.');
-            return (i < 0) ? '' : filename.substr(i + 1);
-        }
-
-        let modulesPath = rootPath(`${this.options.path}/${vendor}/**/*/${this.options.entryFile}`);
-
-        let modules = new FileSet(modulesPath);
-        modules.files.forEach(file => {
+        this.getModules().forEach(file => {
             let module = require(file);
-            let resourcesPath = path.dirname(file) + '/' + this.options.resourcesDirectory;
+            let resourcesPath = this.getResourcesPath(file);
 
             vendors = vendors.concat(module.vendors)
 
             Object.keys(module.entries).forEach(source => {
                 let entry = module.entries[source]
-                let extension = getExtension(source)
+                let extension = this.getExtension(source)
                 if (extension === 'js') {
                     mix.js(`${resourcesPath}/js/${source}`, `${Config.publicPath}/js/${this.options.modulesPath}/${entry}`)
                 } else if (extension === 'scss') {
@@ -57,14 +50,43 @@ class ModularMix {
         });
 
         if (this.options.extract && vendors.length > 0) {
-            mix.extract(vendors);
+            mix.extract(vendors.filter((value, index, self) => {
+                return self.indexOf(value) === index;
+            }));
         }
     }
 
-    webpackConfig(config) {
-        config.resolve = {
-            symlinks: false,
+    getModuleName(file) {
+        let directory = path.dirname(file)
+        let base = new String(directory).substring(directory.lastIndexOf('/') + 1);
+        if (base.lastIndexOf(".") !== -1) {
+            base = base.substring(0, base.lastIndexOf("."))
         }
+        return base;
+    }
+
+    getExtension(filename) {
+        var i = filename.lastIndexOf('.');
+        return (i < 0) ? '' : filename.substr(i + 1);
+    }
+
+    getResourcesPath(file) {
+        return path.dirname(file) + '/' + this.options.resourcesDirectory;
+    }
+
+    getModules() {
+        let modulesPath = rootPath(`${this.options.path}/${this.vendor}/**/*/${this.options.entryFile}`);
+        let modules = new FileSet(modulesPath);
+
+        return modules.files;
+    }
+
+    webpackConfig(config) {
+        this.getModules().forEach(file => {
+            config.resolve.alias[this.getModuleName(file)] = this.getResourcesPath(file) + '/js'
+        })
+
+        config.resolve.symlinks = false
     }
 }
 
