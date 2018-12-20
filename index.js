@@ -34,25 +34,39 @@ class ModularMix {
         let vendors = [];
         this.getModules().forEach(file => {
             let module = require(file);
-            let resourcesPath = this.getResourcesPath(file);
-
             vendors = vendors.concat(module.vendors)
-
-            Object.keys(module.entries).forEach(source => {
-                let entry = module.entries[source]
-                let extension = this.getExtension(source)
-                if (extension === 'js') {
-                    mix.js(`${resourcesPath}/js/${source}`, `${Config.publicPath}/js/${this.options.modulesPath}/${entry}`)
-                } else if (extension === 'scss') {
-                    mix.sass(`${resourcesPath}/sass/${source}`, `${Config.publicPath}/css/${this.options.modulesPath}/${entry}`)
-                }
-            })
+            this.compileModule(module, file);
         });
 
         if (this.options.extract && vendors.length > 0) {
             mix.extract(vendors.filter((value, index, self) => {
                 return self.indexOf(value) === index;
             }));
+        }
+    }
+
+    compileModule(module, file) {
+        let resourcesPath = this.getResourcesPath(file);
+
+        Object.keys(module.entries).forEach(source => {
+            let entry = module.entries[source]
+            let extension = this.getExtension(source)
+            if (extension === 'js') {
+                mix.js(`${resourcesPath}/js/${source}`, `${Config.publicPath}/js/${this.options.modulesPath}/${entry}`)
+            } else if (extension === 'scss') {
+                mix.sass(`${resourcesPath}/sass/${source}`, `${Config.publicPath}/css/${this.options.modulesPath}/${entry}`)
+            }
+        })
+    }
+
+    injectModules(module, file) {
+        if(module.hasOwnProperty('replace')) {
+            Object.keys(module.replace).forEach(find => {
+                let inject = module.replace[find]
+                let [parentModule, file] = find.split('@')
+
+                console.log(parentModule)
+            })
         }
     }
 
@@ -85,6 +99,11 @@ class ModularMix {
         this.getModules().forEach(file => {
             config.resolve.alias[this.getModuleName(file)] = this.getResourcesPath(file) + '/js'
         })
+
+        this.getModules().forEach(file => {
+            let module = require(file);
+            this.injectModules(module);
+        });
 
         config.resolve.symlinks = false
     }
