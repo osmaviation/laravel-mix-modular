@@ -20,7 +20,7 @@ class ModularMix {
         this.options = Object.assign(
             {
                 extract: true,
-                entryFile: 'module.js',
+                entryFile: 'module.json',
                 resourcesDirectory: 'resources',
                 modulesPath: 'modules',
                 path: 'vendor',
