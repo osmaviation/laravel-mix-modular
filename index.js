@@ -1,9 +1,7 @@
 const mix = require('laravel-mix');
 const path = require('path');
 const FileSet = require('file-set')
-
-// This is kind of an undocumented Mix function, hope it stays around! Easy to
-// refactor if it'd ever cause an issue.
+const { NormalModuleReplacementPlugin } = require('webpack')
 const rootPath = Mix.paths.root.bind(Mix.paths);
 
 class ModularMix {
@@ -18,7 +16,6 @@ class ModularMix {
     }
 
     register(vendor, options = {}) {
-
         this.vendor = vendor;
         this.options = Object.assign(
             {
@@ -34,14 +31,18 @@ class ModularMix {
         let vendors = [];
         this.getModules().forEach(file => {
             let module = require(file);
-            vendors = vendors.concat(module.vendors)
-            this.compileModule(module, file);
+            if(module.hasOwnProperty('vendors')) {
+                vendors = vendors.concat(module.vendors)
+            }
+            if(module.hasOwnProperty('entries')) {
+                this.compileModule(module, file);
+            }
         });
 
         if (this.options.extract && vendors.length > 0) {
             mix.extract(vendors.filter((value, index, self) => {
                 return self.indexOf(value) === index;
-            }));
+            }), 'public/js/vendor.js');
         }
     }
 
@@ -51,23 +52,39 @@ class ModularMix {
         Object.keys(module.entries).forEach(source => {
             let entry = module.entries[source]
             let extension = this.getExtension(source)
+
             if (extension === 'js') {
                 mix.js(`${resourcesPath}/js/${source}`, `${Config.publicPath}/js/${this.options.modulesPath}/${entry}`)
             } else if (extension === 'scss') {
                 mix.sass(`${resourcesPath}/sass/${source}`, `${Config.publicPath}/css/${this.options.modulesPath}/${entry}`)
+            } else if (extension === 'styl') {
+                mix.stylus(`${resourcesPath}/stylus/${source}`, `${Config.publicPath}/css/${this.options.modulesPath}/${entry}`)
+            } else if (extension === 'less') {
+                mix.less(`${resourcesPath}/less/${source}`, `${Config.publicPath}/css/${this.options.modulesPath}/${entry}`)
             }
         })
     }
 
-    injectModules(module, file) {
+    injectModules(module, file, plugins) {
+        let currentModule = this.getModuleName(file)
+
         if(module.hasOwnProperty('replace')) {
             Object.keys(module.replace).forEach(find => {
                 let inject = module.replace[find]
                 let [parentModule, file] = find.split('@')
 
-                console.log(parentModule)
+                let parentFilePath = '^.*' + rootPath(`${this.options.path}/${this.vendor}/${parentModule}/${this.options.resourcesDirectory}/${file}`).replace(new RegExp('/', 'g'), '\\/') + '.*$';
+                let replaceFilePath = rootPath(`${this.options.path}/${this.vendor}/${currentModule}/${this.options.resourcesDirectory}/${inject}`);
+
+                plugins.push(
+                    new NormalModuleReplacementPlugin(
+                        new RegExp(parentFilePath),
+                        replaceFilePath
+                    )
+                )
             })
         }
+
     }
 
     getModuleName(file) {
@@ -97,15 +114,23 @@ class ModularMix {
 
     webpackConfig(config) {
         this.getModules().forEach(file => {
-            config.resolve.alias[this.getModuleName(file)] = this.getResourcesPath(file) + '/js'
+            let module = require(file);
+            config.resolve.alias['@' + this.getModuleName(file)] = this.getResourcesPath(file)
         })
+
+        config.resolve.symlinks = false
+        return config
+    }
+
+    webpackPlugins() {
+        let plugins = [];
 
         this.getModules().forEach(file => {
             let module = require(file);
-            this.injectModules(module);
-        });
+            this.injectModules(module, file, plugins);
+        })
 
-        config.resolve.symlinks = false
+        return plugins
     }
 }
 
