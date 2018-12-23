@@ -1,7 +1,7 @@
 const mix = require('laravel-mix');
 const path = require('path');
 const FileSet = require('file-set')
-const { NormalModuleReplacementPlugin } = require('webpack')
+const {NormalModuleReplacementPlugin} = require('webpack')
 const rootPath = Mix.paths.root.bind(Mix.paths);
 
 class ModularMix {
@@ -31,10 +31,10 @@ class ModularMix {
         let vendors = [];
         this.getModules().forEach(file => {
             let module = require(file);
-            if(module.hasOwnProperty('vendors')) {
+            if (module.hasOwnProperty('vendors')) {
                 vendors = vendors.concat(module.vendors)
             }
-            if(module.hasOwnProperty('entries')) {
+            if (module.hasOwnProperty('entries')) {
                 this.compileModule(module, file);
             }
         });
@@ -68,7 +68,7 @@ class ModularMix {
     injectModules(module, file, plugins) {
         let currentModule = this.getModuleName(file)
 
-        if(module.hasOwnProperty('replace')) {
+        if (module.hasOwnProperty('replace')) {
             Object.keys(module.replace).forEach(find => {
                 let inject = module.replace[find]
                 let [parentModule, file] = find.split('@')
